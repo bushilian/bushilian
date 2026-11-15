@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Fetch free proxy nodes from public subscription sources, rename them to
-our brand, drop dead ones (TCP test), and write a base64 subscription file.
+"""Fetch proxy nodes from subscription sources, rename them to our brand,
+drop dead ones (TCP test plus a real proxied request), and write a base64
+subscription file.
 
 Usage (from the repo root):
-    python3 fetch_nodes.py [--out sub] [--timeout 5]
+    python3 fetch_nodes.py [--out sub] [--timeout 5] [--xray PATH]
 
 Safe to run repeatedly: the output file is simply overwritten.
 
@@ -16,11 +17,12 @@ How it works
    strip the original sharer's brand, append BRAND.
 4. TCP-test every unique endpoint (host:port). Direct connect is used when
    there is no proxy; if HTTP(S)_PROXY is set in the environment, the test
-   goes through an HTTP CONNECT tunnel instead (direct connects are
-   meaningless behind an intercepting egress proxy). Hostnames are resolved
-   via DNS-over-HTTPS (Cloudflare) with a getaddrinfo fallback, so the test
-   is not fooled by intercepted local DNS.
-5. Survivors are sorted by latency and written as newline-joined URIs,
+   goes through an HTTP CONNECT tunnel instead. Hostnames are resolved
+   via DNS-over-HTTPS (Cloudflare) with a getaddrinfo fallback.
+5. When an xray binary is given, every TCP-alive node is also verified
+   with a real proxied request; nodes that cannot actually proxy are
+   dropped.
+6. Survivors are sorted by latency and written as newline-joined URIs,
    base64-encoded without line wrapping, to the output file.
 """
 
@@ -38,24 +40,20 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 # ---------------------------------------------------------------- config ---
-# Appended to every node name, e.g. "美国 bushilian 每天更新优质节点 https://github.com/bushilian".
+# Appended to every node name.
 BRAND = "bushilian 每天更新优质节点 https://github.com/bushilian"
 
-# Upstream public subscription URLs. Add more here to aggregate more
-# sources; every entry must return either plain-text node URIs (one per
+# Subscription source URLs, one per line, from the SOURCE_URL environment
+# variable. Each source must return either plain-text node URIs (one per
 # line) or a base64-encoded blob of the same.
-SOURCES = [
-    "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub",
-]
+SOURCES = [u.strip() for u in os.environ.get("SOURCE_URL", "").splitlines()
+           if u.strip()]
 
 DEFAULT_OUT = "sub"
 DEFAULT_TIMEOUT = 5
 
-# Records the SHA-256 of the raw upstream subscription bytes that produced
-# the current output. The update only proceeds when this fingerprint
-# changes, so the repo never rewrites `sub` on its own: it mirrors the
-# upstream source, and stays still when the upstream has not changed,
-# even if a TCP re-test would have dropped or kept a different node.
+# SHA-256 of the raw source subscription bytes that produced the
+# current output.
 SOURCE_SHA_FILE = ".source-sha"
 
 # Tokens that identify the original sharer / generic filler. Removed from
@@ -69,7 +67,7 @@ BRAND_TOKENS = [
 
 # Location names recognised in display names (longest match wins).
 # CJK names match as substrings; 2-letter ASCII codes match only as
-# standalone tokens (so "RO" never matches inside "CROSS").
+# standalone tokens.
 LOCATIONS_CJK = [
     "日本东京", "日本", "东京", "大阪", "韩国", "首尔", "新加坡",
     "美国", "加拿大", "英国", "伦敦", "德国", "法国", "巴黎", "荷兰",
@@ -218,10 +216,8 @@ def dedup_key(node: dict):
 
 
 # ------------------------------------------------- real proxy test (xray) ---
-# A TCP connect only proves the port is open. A node can pass it and still
-# be useless (wrong password/UUID, dead account, misconfigured server).
-# This section turns a node URI into an xray outbound and actually proxies
-# a request through it, which is the only proof the node really works.
+# Turn a node URI into an xray outbound and proxy a real request
+# through it.
 
 def _query_params(uri: str) -> dict:
     try:
@@ -595,13 +591,6 @@ def main(argv=None):
         print("ERROR: no nodes fetched from any source", file=sys.stderr)
         return 1
 
-    # NOTE: an earlier version skipped regeneration entirely when the
-    # upstream fingerprint was unchanged. That also skipped the real
-    # proxy test, so nodes that died on their own stayed listed until the
-    # upstream next changed. The real test is now the authority instead:
-    # it only drops a node when a real proxied request fails, which is
-    # proof the node is dead, not a flaky TCP blip. The workflow still
-    # only commits when the final file actually changed.
     fingerprint = hashlib.sha256(
         "\n".join(source_shas).encode("utf-8")).hexdigest()
     print("source sha %s..." % fingerprint[:12])
@@ -642,8 +631,8 @@ def main(argv=None):
     dead = len(unique) - len(alive)
     print("alive: %d, dead: %d" % (len(alive), dead))
 
-    # Real proxy test: a TCP connect only proves the port is open. Verify
-    # each survivor can actually proxy a request; drop the ones that can't.
+    # Verify each survivor can actually proxy a request; drop the ones
+    # that cannot.
     if args.xray:
         print("real-test via xray: %d node(s)" % len(alive))
         with ThreadPoolExecutor(max_workers=4) as pool:
