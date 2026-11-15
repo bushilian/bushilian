@@ -51,6 +51,9 @@ https://raw.githubusercontent.com/bushilian/bushilian/main/sub
 | **FlClash** | Clash / Mihomo 配置、规则与代理组。 | 免费 | [GitHub Releases](https://github.com/chen08209/FlClash/releases) | [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#flclash)<br>Clash / Mihomo YAML |
 | **Karing** | 多协议代理，支持 Clash / sing-box 路由规则。 | 免费 | [官方项目与下载](https://github.com/KaringX/karing) | [官方指南 [中文]](https://karing.app/quickstart) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#karing)<br>URI / Base64 · Clash YAML · sing-box JSON |
 | **Throne** | 基于 sing-box 的桌面节点与路由管理。 | 免费 | [官方项目与下载](https://github.com/throneproj/Throne) | [官方指南 [中文]](https://throneproj.github.io/zh/get_started/configuration/) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#throne)<br>URI / Base64 · sing-box JSON · Clash YAML proxies |
+| **OneXray** | 基于 Xray 内核的跨平台客户端，支持多种代理协议。 | 免费 | [GitHub Releases](https://github.com/YuanDevTeam/OneXray/releases) | [官方网站](https://onexray.com/)<br>URI / Base64 |
+| **Happ** | 基于 Xray 内核的跨平台客户端，支持多种代理协议；另有 TV 版。 | 免费 | [GitHub Releases](https://github.com/Happ-proxy/happ-desktop/releases) | [官方网站](https://www.happ.su/)<br>URI / Base64 |
+| **ClashMi** | 基于 Mihomo 内核的跨平台客户端，订阅与 YAML 配置开箱即用。 | 免费 | [GitHub Releases](https://github.com/KaringX/clashmi/releases/latest) | [官方网站](https://clashmi.app/)<br>URI / Base64 · Clash / Mihomo YAML |
 
 <a id="clients-macos"></a>
 
@@ -68,6 +71,10 @@ https://raw.githubusercontent.com/bushilian/bushilian/main/sub
 | **Surge Mac** | 规则代理与网络调试，使用 Surge 配置格式。 | 付费；Mac 与 iOS 独立授权 | [官方网站](https://nssurge.com/) | [官方指南 [English]](https://manual.nssurge.com/getting-started/quick-start.html) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#surge)<br>Surge INI / Managed Profile |
 | **Quantumult X** | 规则分流与网络调试，使用自身配置格式。 | 付费 | [App Store](https://apps.apple.com/us/app/quantumult-x/id1443988620) | [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#quantumult-x)<br>Quantumult X / server_remote |
 | **sing-box for Apple platforms** | 本地或远程 sing-box JSON 配置，需匹配核心版本。 | 免费 | [官方下载说明](https://sing-box.sagernet.org/clients/apple/) | [官方指南 [中文]](https://sing-box.sagernet.org/zh/clients/general/) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#sing-box)<br>sing-box JSON |
+| **OneXray** | 基于 Xray 内核的跨平台客户端，支持多种代理协议。 | 免费 | [GitHub Releases](https://github.com/YuanDevTeam/OneXray/releases) | [官方网站](https://onexray.com/)<br>URI / Base64 |
+| **Happ** | 基于 Xray 内核的跨平台客户端，支持多种代理协议；另有 TV 版。 | 免费 | [GitHub Releases](https://github.com/Happ-proxy/happ-desktop/releases) | [官方网站](https://www.happ.su/)<br>URI / Base64 |
+| **v2box** | V2Ray 系节点管理与订阅，支持 VLESS / VMess / Trojan 等。 | 免费 | [App Store](https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690) | URI / Base64 |
+| **ClashMi** | 基于 Mihomo 内核的跨平台客户端，订阅与 YAML 配置开箱即用。 | 免费 | [GitHub Releases](https://github.com/KaringX/clashmi/releases/latest) | [官方网站](https://clashmi.app/)<br>URI / Base64 · Clash / Mihomo YAML |
 
 下载时请核对 Intel / Apple Silicon 架构及 macOS 系统要求。Surge Mac 与 iOS 版分别授权。
 
@@ -84,6 +91,9 @@ https://raw.githubusercontent.com/bushilian/bushilian/main/sub
 | **FlClash** | Clash / Mihomo 配置、规则与代理组。 | 免费 | [GitHub Releases](https://github.com/chen08209/FlClash/releases) | [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#flclash)<br>Clash / Mihomo YAML |
 | **Karing** | 多协议代理，支持 Clash / sing-box 路由规则。 | 免费 | [官方项目与下载](https://github.com/KaringX/karing) | [官方指南 [中文]](https://karing.app/quickstart) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#karing)<br>URI / Base64 · Clash YAML · sing-box JSON |
 | **Throne** | 基于 sing-box 的桌面节点与路由管理。 | 免费 | [官方项目与下载](https://github.com/throneproj/Throne) | [官方指南 [中文]](https://throneproj.github.io/zh/get_started/configuration/) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#throne)<br>URI / Base64 · sing-box JSON · Clash YAML proxies |
+| **OneXray** | 基于 Xray 内核的跨平台客户端，支持多种代理协议。 | 免费 | [GitHub Releases](https://github.com/YuanDevTeam/OneXray/releases) | [官方网站](https://onexray.com/)<br>URI / Base64 |
+| **Happ** | 基于 Xray 内核的跨平台客户端，支持多种代理协议；另有 TV 版。 | 免费 | [GitHub Releases](https://github.com/Happ-proxy/happ-desktop/releases) | [官方网站](https://www.happ.su/)<br>URI / Base64 |
+| **ClashMi** | 基于 Mihomo 内核的跨平台客户端，订阅与 YAML 配置开箱即用。 | 免费 | [GitHub Releases](https://github.com/KaringX/clashmi/releases/latest) | [官方网站](https://clashmi.app/)<br>URI / Base64 · Clash / Mihomo YAML |
 
 <a id="clients-android"></a>
 
@@ -99,6 +109,10 @@ https://raw.githubusercontent.com/bushilian/bushilian/main/sub
 | **sing-box for Android** | 本地或远程 sing-box JSON 配置，需匹配核心版本。 | 免费 | [官方下载说明](https://sing-box.sagernet.org/clients/android/) | [官方指南 [中文]](https://sing-box.sagernet.org/zh/clients/general/) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#sing-box)<br>sing-box JSON |
 | **Surfboard** | Surge 配置格式，部分功能不兼容。 | 以官方说明为准 | [GitHub Releases](https://github.com/getsurfboard/surfboard/releases/latest) | [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#surfboard)<br>Surfboard / Surge profile |
 | **NekoBox for Android** | 基于 sing-box 的多协议客户端；进阶备选，较少维护。 | 免费 | [GitHub Releases](https://github.com/MatsuriDayo/NekoBoxForAndroid/releases) | [官方指南 [中文]](https://matsuridayo.github.io/nb4a-configuration/) · [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#nekobox-android)<br>URI / Base64 · Clash proxies · sing-box outbounds |
+| **OneXray** | 基于 Xray 内核的跨平台客户端，支持多种代理协议。 | 免费 | [GitHub Releases](https://github.com/YuanDevTeam/OneXray/releases) | [官方网站](https://onexray.com/)<br>URI / Base64 |
+| **Happ** | 基于 Xray 内核的跨平台客户端，支持多种代理协议；另有 TV 版。 | 免费 | [GitHub Releases](https://github.com/Happ-proxy/happ-desktop/releases) | [官方网站](https://www.happ.su/)<br>URI / Base64 |
+| **v2box** | V2Ray 系节点管理与订阅，支持 VLESS / VMess / Trojan 等。 | 免费 | [Google Play](https://play.google.com/store/apps/details?id=dev.hexasoftware.v2box) | URI / Base64 |
+| **ClashMi** | 基于 Mihomo 内核的跨平台客户端，订阅与 YAML 配置开箱即用。 | 免费 | [GitHub Releases](https://github.com/KaringX/clashmi/releases/latest) | [官方网站](https://clashmi.app/)<br>URI / Base64 · Clash / Mihomo YAML |
 
 NekoBox 官方已说明较少维护、不接受新功能请求，并提示 Google Play 同名版本已由第三方控制；请使用上方 GitHub 入口。
 
@@ -118,6 +132,10 @@ NekoBox 官方已说明较少维护、不接受新功能请求，并提示 Googl
 | **Egern** | 规则分流与网络调试。 | 免费下载；Pro 内购 | [App Store](https://apps.apple.com/us/app/egern/id1616105820) | [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#egern)<br>Egern Profile.yaml / proxies YAML |
 | **Streisand** | 节点与订阅管理，支持多种代理协议。 | 免费 | [App Store](https://apps.apple.com/us/app/streisand/id6450534064) | [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#streisand)<br>Supported node configurations |
 | **Potatso** | 代理配置与规则分流。 | 免费；Pro 内购 | [App Store](https://apps.apple.com/us/app/potatso/id1239860606) | [快速配置](https://github.com/Pawdroid/Free-servers/blob/main/docs/client-tutorials/zh.md#potatso)<br>Mihomo / Clash YAML · supported node links |
+| **OneXray** | 基于 Xray 内核的跨平台客户端，支持多种代理协议。 | 免费 | [App Store](https://apps.apple.com/us/app/onexray/id6745748773) | [官方网站](https://onexray.com/)<br>URI / Base64 |
+| **Happ** | 基于 Xray 内核的跨平台客户端，支持多种代理协议；另有 TV 版。 | 免费 | [App Store](https://apps.apple.com/app/happ-proxy-utility/id6504287215) | [官方网站](https://www.happ.su/)<br>URI / Base64 |
+| **v2box** | V2Ray 系节点管理与订阅，支持 VLESS / VMess / Trojan 等。 | 免费 | [App Store](https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690) | URI / Base64 |
+| **ClashMi** | 基于 Mihomo 内核的跨平台客户端，订阅与 YAML 配置开箱即用。 | 免费 | [App Store](https://apps.apple.com/us/app/clash-mi/id6744321968) | [官方网站](https://clashmi.app/)<br>URI / Base64 · Clash / Mihomo YAML |
 
 <a id="router-plugins"></a>
 
