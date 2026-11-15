@@ -26,6 +26,7 @@ How it works
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -49,6 +50,13 @@ SOURCES = [
 
 DEFAULT_OUT = "sub"
 DEFAULT_TIMEOUT = 5
+
+# Records the SHA-256 of the raw upstream subscription bytes that produced
+# the current output. The update only proceeds when this fingerprint
+# changes, so the repo never rewrites `sub` on its own: it mirrors the
+# upstream source, and stays still when the upstream has not changed,
+# even if a TCP re-test would have dropped or kept a different node.
+SOURCE_SHA_FILE = ".source-sha"
 
 # Tokens that identify the original sharer / generic filler. Removed from
 # display names before the brand is appended. Case-insensitive.
@@ -139,17 +147,21 @@ def decode_line(line: str) -> str:
     return ""
 
 
-def fetch_subscription(url: str, timeout: int = 20) -> list:
+def fetch_subscription(url: str, timeout: int = 20) -> tuple:
+    """Fetch one subscription URL. Returns (nodes, raw_sha256), where
+    raw_sha256 is the SHA-256 of the exact bytes received, so callers can
+    tell whether the upstream changed at all."""
     req = urllib.request.Request(
         url, headers={"User-Agent": "Mozilla/5.0 (fetch_nodes.py)"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
-        body = decode_sub_body(resp.read())
+        raw = resp.read()
+    body = decode_sub_body(raw)
     nodes = []
     for line in body.splitlines():
         uri = decode_line(line)
         if uri and uri.split("://", 1)[0].lower() in SCHEMES:
             nodes.append(uri)
-    return nodes
+    return nodes, hashlib.sha256(raw).hexdigest()
 
 
 # -------------------------------------------------------------- parsing ---
@@ -356,13 +368,34 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     fetched = []
+    source_shas = []
     for url in SOURCES:
         try:
-            nodes = fetch_subscription(url)
+            nodes, raw_sha = fetch_subscription(url)
             print("fetched %d node(s) from %s" % (len(nodes), url))
             fetched.extend(nodes)
+            source_shas.append(raw_sha)
         except Exception as exc:
             print("WARN: failed to fetch %s: %s" % (url, exc), file=sys.stderr)
+
+    if not fetched:
+        print("ERROR: no nodes fetched from any source", file=sys.stderr)
+        return 1
+
+    # Mirror guarantee: only regenerate when the upstream source itself
+    # changed. The fingerprint is the SHA-256 of the exact upstream bytes,
+    # so a TCP re-test alone can never trigger an update.
+    fingerprint = hashlib.sha256(
+        "\n".join(source_shas).encode("utf-8")).hexdigest()
+    try:
+        with open(SOURCE_SHA_FILE, "r", encoding="utf-8") as fh:
+            stored = fh.read().strip()
+    except FileNotFoundError:
+        stored = ""
+    if stored and stored == fingerprint:
+        print("source unchanged (sha %s...), skipping update" % fingerprint[:12])
+        return 0
+    print("source changed (sha %s...), regenerating" % fingerprint[:12])
 
     # Deduplicate (first occurrence wins).
     seen, unique = set(), []
@@ -404,6 +437,8 @@ def main(argv=None):
     blob = base64.b64encode("\n".join(renamed).encode("utf-8")).decode("ascii")
     with open(args.out, "w", encoding="utf-8") as fh:
         fh.write(blob + "\n")
+    with open(SOURCE_SHA_FILE, "w", encoding="utf-8") as fh:
+        fh.write(fingerprint + "\n")
     print("wrote %d node(s) to %s" % (len(renamed), args.out))
     return 0
 
