@@ -26,6 +26,8 @@ jobs:
           /tmp/xray-bin/xray version | head -1
 
       - name: Fetch and test nodes
+        env:
+          SOURCE_URL: ${{ secrets.SOURCE_URL }}
         run: python3 fetch_nodes.py --xray /tmp/xray-bin/xray
 
       - name: Commit and push if changed
