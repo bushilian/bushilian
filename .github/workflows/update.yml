@@ -25,5 +25,5 @@ jobs:
         run: |
           git config user.name "bushilian"
           git config user.email "356933998+bushilian@users.noreply.github.com"
-          git add sub
+          git add sub .source-sha
           git diff --cached --quiet || git commit -m "Update nodes" && git push
