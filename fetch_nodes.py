@@ -595,20 +595,16 @@ def main(argv=None):
         print("ERROR: no nodes fetched from any source", file=sys.stderr)
         return 1
 
-    # Mirror guarantee: only regenerate when the upstream source itself
-    # changed. The fingerprint is the SHA-256 of the exact upstream bytes,
-    # so a TCP re-test alone can never trigger an update.
+    # NOTE: an earlier version skipped regeneration entirely when the
+    # upstream fingerprint was unchanged. That also skipped the real
+    # proxy test, so nodes that died on their own stayed listed until the
+    # upstream next changed. The real test is now the authority instead:
+    # it only drops a node when a real proxied request fails, which is
+    # proof the node is dead, not a flaky TCP blip. The workflow still
+    # only commits when the final file actually changed.
     fingerprint = hashlib.sha256(
         "\n".join(source_shas).encode("utf-8")).hexdigest()
-    try:
-        with open(SOURCE_SHA_FILE, "r", encoding="utf-8") as fh:
-            stored = fh.read().strip()
-    except FileNotFoundError:
-        stored = ""
-    if stored and stored == fingerprint:
-        print("source unchanged (sha %s...), skipping update" % fingerprint[:12])
-        return 0
-    print("source changed (sha %s...), regenerating" % fingerprint[:12])
+    print("source sha %s..." % fingerprint[:12])
 
     # Deduplicate (first occurrence wins).
     seen, unique = set(), []
