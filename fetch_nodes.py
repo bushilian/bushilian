@@ -217,6 +217,213 @@ def dedup_key(node: dict):
     return (node["scheme"], node["host"].lower(), node["port"], node["userinfo"])
 
 
+# ------------------------------------------------- real proxy test (xray) ---
+# A TCP connect only proves the port is open. A node can pass it and still
+# be useless (wrong password/UUID, dead account, misconfigured server).
+# This section turns a node URI into an xray outbound and actually proxies
+# a request through it, which is the only proof the node really works.
+
+def _query_params(uri: str) -> dict:
+    try:
+        rest = uri.split("://", 1)[1].split("#", 1)[0]
+        query = rest.split("?", 1)[1] if "?" in rest else ""
+    except Exception:
+        return {}
+    params = {}
+    for pair in query.split("&"):
+        if "=" in pair:
+            key, value = pair.split("=", 1)
+            params[urllib.parse.unquote(key)] = urllib.parse.unquote(value)
+    return params
+
+
+def _stream_settings(params: dict, scheme: str) -> dict:
+    """Build xray streamSettings from a node's query params."""
+    network = (params.get("type") or "tcp").lower()
+    security = (params.get("security") or "").lower()
+    settings = {"network": network}
+    if security in ("tls", "reality"):
+        settings["security"] = security
+        tls = {}
+        sni = params.get("sni") or params.get("host") or ""
+        if sni:
+            tls["serverName"] = sni
+        if security == "reality":
+            pbk = params.get("pbk") or ""
+            if pbk:
+                tls["publicKey"] = pbk
+            sid = params.get("sid") or ""
+            if sid:
+                tls["shortId"] = sid
+        if tls:
+            settings["tlsSettings" if security == "tls" else "realitySettings"] = tls
+    if network == "ws":
+        ws = {}
+        path = params.get("path") or "/"
+        ws["path"] = path
+        host = params.get("host") or ""
+        if host:
+            ws["headers"] = {"Host": host}
+        settings["wsSettings"] = ws
+    elif network == "grpc":
+        settings["grpcSettings"] = {
+            "serviceName": params.get("serviceName") or ""}
+    elif network == "xhttp":
+        settings["xhttpSettings"] = {
+            "path": params.get("path") or "/",
+            "host": params.get("host") or "",
+            "mode": params.get("mode") or "auto"}
+    return settings
+
+
+def node_to_xray_outbound(uri: str):
+    """Convert a node URI to an xray outbound dict, or None if the
+    protocol is not supported for testing."""
+    node = parse_node(uri)
+    if node is None:
+        return None
+    scheme = node["scheme"]
+    params = _query_params(uri)
+    if scheme == "vless":
+        return {
+            "protocol": "vless",
+            "settings": {"vnext": [{
+                "address": node["host"],
+                "port": node["port"],
+                "users": [{"id": node["userinfo"],
+                           "encryption": params.get("encryption") or "none"}]}]},
+            "streamSettings": _stream_settings(params, scheme),
+        }
+    if scheme == "vmess":
+        data = node.get("vmess") or {}
+        user = {"id": data.get("id", ""),
+                "alterId": int(data.get("aid", 0) or 0),
+                "security": data.get("scy") or "auto"}
+        vmess_params = {
+            "type": data.get("net") or "tcp",
+            "security": data.get("tls") or "",
+            "sni": data.get("sni") or data.get("host") or "",
+            "path": data.get("path") or "",
+            "host": data.get("host") or "",
+        }
+        return {
+            "protocol": "vmess",
+            "settings": {"vnext": [{
+                "address": node["host"],
+                "port": node["port"],
+                "users": [user]}]},
+            "streamSettings": _stream_settings(vmess_params, scheme),
+        }
+    if scheme == "trojan":
+        return {
+            "protocol": "trojan",
+            "settings": {"servers": [{
+                "address": node["host"],
+                "port": node["port"],
+                "password": node["userinfo"]}]},
+            "streamSettings": _stream_settings(params, scheme),
+        }
+    if scheme == "ss":
+        # ss://BASE64(method:password)@host:port or ss://BASE64(method:password@host:port)
+        userinfo = node["userinfo"]
+        method, password = "", ""
+        try:
+            decoded = base64.b64decode(
+                userinfo + "=" * (-len(userinfo) % 4)).decode("utf-8", "replace")
+            if ":" in decoded:
+                method, password = decoded.split(":", 1)
+        except Exception:
+            pass
+        if not method:
+            try:
+                decoded = base64.b64decode(
+                    userinfo + "=" * (-len(userinfo) % 4)).decode("utf-8", "replace")
+                if "@" in decoded:
+                    creds, _ = decoded.rsplit("@", 1)
+                    if ":" in creds:
+                        method, password = creds.split(":", 1)
+            except Exception:
+                pass
+        if not method or not password:
+            return None
+        return {
+            "protocol": "shadowsocks",
+            "settings": {"servers": [{
+                "address": node["host"],
+                "port": node["port"],
+                "method": method,
+                "password": password}]},
+        }
+    return None
+
+
+def real_test_node(uri: str, xray_bin: str, test_url: str,
+                   timeout: int = 15) -> bool:
+    """Proxy one real HTTPS request through the node via xray. Returns True
+    only if the request succeeds (HTTP 2xx)."""
+    outbound = node_to_xray_outbound(uri)
+    if outbound is None:
+        return False
+    config = {
+        "log": {"loglevel": "warning"},
+        "inbounds": [{
+            "port": 0, "listen": "127.0.0.1", "protocol": "socks",
+            "settings": {"auth": "noauth", "udp": False},
+        }],
+        "outbounds": [outbound, {"protocol": "freedom", "tag": "direct"}],
+    }
+    # Find a free local port for the SOCKS inbound.
+    sock = socket.socket()
+    sock.bind(("127.0.0.1", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+    config["inbounds"][0]["port"] = port
+    import subprocess
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".json",
+                                     delete=False) as fh:
+        json.dump(config, fh)
+        cfg_path = fh.name
+    proc = None
+    try:
+        proc = subprocess.Popen(
+            [xray_bin, "run", "-c", cfg_path],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # Wait for xray to listen.
+        deadline = time.time() + 8
+        up = False
+        while time.time() < deadline:
+            try:
+                probe = socket.create_connection(("127.0.0.1", port), timeout=1)
+                probe.close()
+                up = True
+                break
+            except OSError:
+                time.sleep(0.2)
+        if not up:
+            return False
+        result = subprocess.run(
+            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+             "--socks5", "127.0.0.1:%d" % port,
+             "--max-time", str(timeout), test_url],
+            capture_output=True, text=True, timeout=timeout + 5)
+        code = result.stdout.strip()
+        return code.startswith("2")
+    except Exception:
+        return False
+    finally:
+        if proc is not None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except Exception:
+                proc.kill()
+        try:
+            os.unlink(cfg_path)
+        except OSError:
+            pass
+
+
 # -------------------------------------------------------------- renaming --
 def clean_name(old_name: str, scheme: str) -> str:
     """Keep the location, strip sharer brands, append BRAND."""
@@ -365,6 +572,12 @@ def main(argv=None):
                     help="output subscription file (default: sub)")
     ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
                     help="TCP test timeout in seconds (default: 5)")
+    ap.add_argument("--xray", default="",
+                    help="path to an xray binary; when given, every "
+                    "TCP-alive node is also verified with a real proxied "
+                    "request and dropped if it cannot actually proxy")
+    ap.add_argument("--test-url", default="https://www.google.com/generate_204",
+                    help="URL fetched through each node for the real test")
     args = ap.parse_args(argv)
 
     fetched = []
@@ -432,6 +645,24 @@ def main(argv=None):
     alive.sort(key=lambda item: item[0])
     dead = len(unique) - len(alive)
     print("alive: %d, dead: %d" % (len(alive), dead))
+
+    # Real proxy test: a TCP connect only proves the port is open. Verify
+    # each survivor can actually proxy a request; drop the ones that can't.
+    if args.xray:
+        print("real-test via xray: %d node(s)" % len(alive))
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(
+                lambda item: real_test_node(item[1], args.xray, args.test_url),
+                alive))
+        verified, failed = [], []
+        for (latency, uri), ok in zip(alive, results):
+            (verified if ok else failed).append((latency, uri))
+        for _, uri in failed:
+            node = parse_node(uri)
+            print("real-test FAILED: %s (%s:%d)"
+                  % (node["name"] or uri[:40], node["host"], node["port"]))
+        print("real-test passed: %d, failed: %d" % (len(verified), len(failed)))
+        alive = verified
 
     renamed = [rename_node(uri) for _, uri in alive]
     blob = base64.b64encode("\n".join(renamed).encode("utf-8")).decode("ascii")
