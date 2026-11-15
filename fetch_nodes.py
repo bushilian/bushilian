@@ -355,8 +355,9 @@ def node_to_xray_outbound(uri: str):
 
 def real_test_node(uri: str, xray_bin: str, test_url: str,
                    timeout: int = 15) -> bool:
-    """Proxy one real HTTPS request through the node via xray. Returns True
-    only if the request succeeds (HTTP 2xx)."""
+    """Proxy a real HTTPS request through the node via xray. Returns True
+    if any attempt succeeds (HTTP 2xx). Retries a few times so a single
+    transient failure does not drop a usable node."""
     outbound = node_to_xray_outbound(uri)
     if outbound is None:
         return False
@@ -398,13 +399,20 @@ def real_test_node(uri: str, xray_bin: str, test_url: str,
                 time.sleep(0.2)
         if not up:
             return False
-        result = subprocess.run(
-            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
-             "--socks5", "127.0.0.1:%d" % port,
-             "--max-time", str(timeout), test_url],
-            capture_output=True, text=True, timeout=timeout + 5)
-        code = result.stdout.strip()
-        return code.startswith("2")
+        for attempt in range(3):
+            if attempt:
+                time.sleep(2)
+            try:
+                result = subprocess.run(
+                    ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+                     "--socks5", "127.0.0.1:%d" % port,
+                     "--max-time", str(timeout), test_url],
+                    capture_output=True, text=True, timeout=timeout + 5)
+                if result.stdout.strip().startswith("2"):
+                    return True
+            except Exception:
+                continue
+        return False
     except Exception:
         return False
     finally:
