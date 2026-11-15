@@ -38,8 +38,8 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 # ---------------------------------------------------------------- config ---
-# Appended to every node name, e.g. "美国 bushilian 每天更新优质节点".
-BRAND = "bushilian 每天更新优质节点"
+# Appended to every node name, e.g. "美国 bushilian 每天更新优质节点 https://github.com/bushilian".
+BRAND = "bushilian 每天更新优质节点 https://github.com/bushilian"
 
 # Upstream public subscription URLs. Add more here to aggregate more
 # sources; every entry must return either plain-text node URIs (one per
