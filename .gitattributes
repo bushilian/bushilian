@@ -1,3 +1,1 @@
-# Hide the fetcher script from GitHub's language statistics so the repo
-# does not show Python as a language.
 fetch_nodes.py linguist-vendored linguist-detectable=false
