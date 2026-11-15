@@ -18,8 +18,15 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install xray (for real proxy test)
+        run: |
+          curl -sL -o /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/download/v26.11.9/Xray-linux-64.zip
+          unzip -o -q /tmp/xray.zip -d /tmp/xray-bin xray
+          chmod +x /tmp/xray-bin/xray
+          /tmp/xray-bin/xray version | head -1
+
       - name: Fetch and test nodes
-        run: python3 fetch_nodes.py
+        run: python3 fetch_nodes.py --xray /tmp/xray-bin/xray
 
       - name: Commit and push if changed
         run: |
